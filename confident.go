@@ -3,6 +3,7 @@ package confident
 import (
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 )
@@ -47,7 +48,15 @@ func (k *Confident) Read() error {
 		return ConfidentFileNotReadableError{Path: configFilePath}
 	}
 
-	err = json.Unmarshal(configFileBytes, &k.Config)
+	switch k.Type {
+	case "json":
+		err = json.Unmarshal(configFileBytes, &k.Config)
+		break
+	case "yaml", "yml":
+		err = yaml.Unmarshal(configFileBytes, &k.Config)
+		break
+	}
+
 	if err != nil {
 		return ConfidentUnmarshallingError{Path: configFilePath, UnmarshalError: err}
 	}
@@ -62,7 +71,18 @@ func (k *Confident) PersistConfiguration(force bool) error {
 	if (hash != k.InitialHash) || force {
 		configPath := k.Path + "/" + k.Name + "." + k.Type
 
-		b, err := json.MarshalIndent(k.Config, "", " ")
+		var b []byte
+		var err error
+
+		fmt.Println(k.Type)
+		switch k.Type {
+		case "json":
+			b, err = json.MarshalIndent(k.Config, "", " ")
+			break
+		case "yaml", "yml":
+			b, err = yaml.Marshal(k.Config)
+			break
+		}
 		if err != nil {
 			return ConfidentMarshallingError{Path: configPath, MarshalError: err}
 		}
