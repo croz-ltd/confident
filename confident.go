@@ -34,57 +34,59 @@ func (k *Confident) GetConfig() interface{} {
 	return k.Config
 }
 
-func (k *Confident) Read() {
+func (k *Confident) Read() error {
 	configFilePath := k.Path + "/" + k.Name + "." + k.Type
 	_, err := os.Stat(configFilePath)
 	if err != nil {
 		// Config file does not exists, skip reading
-		return
+		return nil
 	}
 
 	configFileBytes, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
-		fmt.Println("fatal: fail to read configuration file")
-		os.Exit(1)
+		return ConfidentFileNotReadableError{Path: configFilePath}
 	}
 
 	err = json.Unmarshal(configFileBytes, &k.Config)
 	if err != nil {
-		fmt.Println("fatal: fail to read configuration file to provided stucture")
-		os.Exit(1)
+		return ConfidentUnmarshallingError{Path: configFilePath, UnmarshalError: err}
 	}
 
 	k.InitialHash = CalculateHash(k.Config)
+	return nil
 }
 
-func (k *Confident) Persist() {
+func (k *Confident) PersistConfiguration(force bool) error {
 	hash := CalculateHash(k.Config)
 
-	if hash != k.InitialHash {
+	if (hash != k.InitialHash) || force {
 		configPath := k.Path + "/" + k.Name + "." + k.Type
 
 		b, err := json.MarshalIndent(k.Config, "", " ")
 		if err != nil {
-			fmt.Println("fatal: error persisting config change")
-			os.Exit(1)
+			return ConfidentMarshallingError{Path: configPath, MarshalError: err}
 		}
 
 		file, err := os.Create(configPath)
 		if err != nil {
-			fmt.Println("fatal: error persisting config change to file")
-			os.Exit(1)
+			return ConfidentFileCreationError{Path: configPath, CreationError: err}
 		}
 		defer file.Close()
 
 		err = file.Chmod(k.Permission)
 		if err != nil {
-			fmt.Println("fatal: fail to set wanted permissions to config file")
+			fmt.Println("warning: fail to set wanted permissions to config file")
 		}
 
 		_, err = file.Write(b)
 		if err != nil {
-			fmt.Println("fatal: error to persisting config change to file")
-			os.Exit(1)
+			return ConfidentWriteError{Path: configPath, WriteError: err}
 		}
 	}
+
+	return nil
+}
+
+func (k *Confident) Persist() error {
+	return k.PersistConfiguration(false)
 }
