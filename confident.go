@@ -31,10 +31,6 @@ func (k *Confident) WithConfiguration(config interface{}) {
 	k.InitialHash = CalculateHash(config)
 }
 
-func (k *Confident) GetConfig() interface{} {
-	return k.Config
-}
-
 func (k *Confident) Read() error {
 	configFilePath := k.Path + "/" + k.Name + "." + k.Type
 	_, err := os.Stat(configFilePath)
@@ -50,10 +46,10 @@ func (k *Confident) Read() error {
 
 	switch k.Type {
 	case "json":
-		err = json.Unmarshal(configFileBytes, &k.Config)
+		err = json.Unmarshal(configFileBytes, k.Config)
 		break
 	case "yaml", "yml":
-		err = yaml.Unmarshal(configFileBytes, &k.Config)
+		err = yaml.Unmarshal(configFileBytes, k.Config)
 		break
 	}
 
@@ -74,7 +70,6 @@ func (k *Confident) PersistConfiguration(force bool) error {
 		var b []byte
 		var err error
 
-		fmt.Println(k.Type)
 		switch k.Type {
 		case "json":
 			b, err = json.MarshalIndent(k.Config, "", " ")

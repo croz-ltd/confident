@@ -9,7 +9,7 @@ go get -u github.com/croz-ltd/confident
 or as a module:
 ```
 require (
-	github.com/croz-ltd/confident v0.0.1
+	github.com/croz-ltd/confident v0.0.2
 )
 ```
 
@@ -58,7 +58,7 @@ type Server struct {
 Next create configuration instance:
 > NOTE: Provide configuration default values when creating configuration instance
 ```go
-var configuration = Configuration{
+var Config = Configuration{
 	Core: Core{
 		Editor: "vi",
 	},
@@ -71,7 +71,7 @@ var k *confident.Confident
 
 func Bootstrap() {
     k = confident.New()
-    k.WithConfiguration(&configuration)
+    k.WithConfiguration(&Config)
      // <Optional>
     k.Name = "config"
     k.Type = "json"
@@ -81,20 +81,10 @@ func Bootstrap() {
     k.Read()
 }
 ```
-Create helper method that will cast configuration instance to structure type:
-```go
-func Get() *Configuration {
-	configuration := k.GetConfig()
-	if configuration != nil {
-		return configuration.(*Configuration)
-	}
-	return nil
-}
-```
+
 Modify configuration attributes:
 ```go
-configuration := Get()
-configuration.Core.Editor = "vim"
+config.Config.Core.Editor = "vim"
 ```
 
 Persist changes to file by calling:
@@ -115,5 +105,5 @@ func main() {
 	config.Persist()
 }
 ```
-and in your magic code just call `config.Get()` to obtain configuration and read and/or modify it.
+and in your magic code just read and/or modify your configuration instance.
 If there is any changes to the configuration, Confident Persist will save it. 
